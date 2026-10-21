@@ -1,0 +1,44 @@
+# syntax=docker/dockerfile:1
+#
+# Traccar database image: TimescaleDB plus PostgreSQL statement statistics.
+#
+# Traccar is meant to run on TimescaleDB: with the extension present it turns
+# tc_positions and tc_events into hypertables (schema/changelog-6.8.0.xml),
+# which is what keeps position history fast as it grows. The upstream image
+# ships the extension but never creates it in the database, and Traccar's own
+# migration only runs `CREATE EXTENSION` when its DB user has the rights to do
+# so. This Containerfile creates it up front, on first initialization, so the
+# database is TimescaleDB-ready before Traccar connects and the migration's
+# `IF NOT EXISTS` becomes a no-op.
+#
+# Runtime configuration (database name and credentials) comes from
+# traccar-db/.env via env_file in compose.yml. Its POSTGRES_USER /
+# POSTGRES_PASSWORD must match DATABASE_USER / DATABASE_PASSWORD in
+# traccar/.env, which is where the Traccar server reads its connection.
+
+ARG TIMESCALEDB_VERSION=2.31.0-pg17
+
+FROM docker.io/timescale/timescaledb:${TIMESCALEDB_VERSION}
+
+# Path is load-bearing. The postgres entrypoint runs every *.sql in this
+# directory, once and in name order, against POSTGRES_DB while initializing an
+# empty data directory. Existing volumes are never touched, so to enable the
+# extension on an already-created database run it by hand:
+#   CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE;
+COPY timescaledb.sql /docker-entrypoint-initdb.d/00-timescaledb.sql
+
+# Retention and compression policies. They need Traccar's hypertables, which
+# exist only after Traccar's first start, so a wrapper entrypoint runs the
+# script in the background on every boot (see apply-policies.sh). Tuned with
+# TRACCAR_RETENTION_DAYS (default 90) and TRACCAR_COMPRESSION_DAYS (default 14);
+# 0 disables a policy.
+COPY apply-policies.sh /usr/local/bin/apply-policies.sh
+COPY entrypoint.sh /usr/local/bin/traccar-db-entrypoint.sh
+RUN chmod +x /usr/local/bin/apply-policies.sh /usr/local/bin/traccar-db-entrypoint.sh
+ENV TRACCAR_RETENTION_DAYS=90 \
+    TRACCAR_COMPRESSION_DAYS=14
+ENTRYPOINT ["/usr/local/bin/traccar-db-entrypoint.sh"]
+
+# Preserve TimescaleDB's required preload and add PostgreSQL query statistics.
+# This CMD is passed through the upstream image entrypoint.
+CMD ["postgres", "-c", "shared_preload_libraries=timescaledb,pg_stat_statements"]

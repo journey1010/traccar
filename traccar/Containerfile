@@ -1,0 +1,38 @@
+# syntax=docker/dockerfile:1
+#
+# Traccar server image.
+#
+# The upstream image already contains the JRE and the traccar jar, so this
+# Containerfile only layers on the project-owned configuration file. The
+# jar is resolved from /opt/traccar/traccar.jar by the image's own
+# entrypoint, which is inherited untouched (it also expands JAVA_OPTS), so
+# only COPY/ENV are needed here.
+#
+# Runtime configuration comes from two places, in order of precedence:
+#   1. env_file: traccar/.env  (CONFIG_USE_ENVIRONMENT_VARIABLES=true, so any
+#      Traccar property can be set as UPPER_SNAKE_CASE, e.g. web.port)
+#   2. /opt/traccar/conf/traccar.xml (copied below) for structural defaults
+#      that should stay in version control.
+#
+# Secrets (database credentials, keys) belong in traccar/.env, never in the
+# XML file.
+
+FROM docker.io/traccar/traccar:6.16.0
+
+# Path is load-bearing. The upstream image runs with WORKDIR /opt/traccar and
+# `CMD -jar tracker-server.jar conf/traccar.xml`, so the file is resolved
+# relative to /opt/traccar and must land in conf/. This replaces the image's
+# own traccar.xml, which held only the four H2 database.* defaults; Traccar's
+# remaining defaults are compiled in, so no default.xml reference is needed.
+COPY traccar.xml /opt/traccar/conf/traccar.xml
+
+# Traccar only reads .env-style variables when this flag is on.
+ENV CONFIG_USE_ENVIRONMENT_VARIABLES=true
+
+# NOTE: no HEALTHCHECK here on purpose. Podman defaults to the OCI image
+# format, which has no HEALTHCHECK field, so buildah silently drops the
+# instruction (with a warning) and `docker inspect`-style health never lands
+# in the image. The health probe is declared in compose.yml instead: both
+# Docker and Podman apply it at runtime, so the image builds cleanly under
+# both engines and the container still reports health.
+EXPOSE 8082 5055

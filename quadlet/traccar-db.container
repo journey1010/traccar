@@ -1,0 +1,27 @@
+[Unit]
+Description=UniTrack Traccar TimescaleDB
+Wants=network-online.target
+After=network-online.target
+
+[Container]
+Image=localhost/unitrack-traccar-db:pg17
+ContainerName=unitrack-traccar-db
+Pod=traccar.pod
+Pull=never
+EnvironmentFile=/etc/unitrack/traccar-db.env
+Volume=unitrack-traccar-db:/var/lib/postgresql/data
+# No fijar usuario/base aquí: la unidad toma ambos de traccar-db.env.
+HealthCmd=pg_isready
+HealthInterval=10s
+HealthTimeout=5s
+HealthRetries=10
+Notify=healthy
+LogDriver=journald
+StopTimeout=60
+
+[Service]
+Restart=always
+TimeoutStartSec=15min
+
+[Install]
+WantedBy=multi-user.target

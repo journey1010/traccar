@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE properties SYSTEM 'http://java.sun.com/dtd/properties.dtd'>
+<!--
+  Traccar structural configuration.
+
+  Schema note: Traccar loads this file with java.util.Properties.loadFromXML(),
+  so the root element MUST be <properties> and every setting MUST be an
+  <entry key='...'> child. A <config>/<property> structure is not valid here
+  and makes Traccar abort at startup.
+
+  This file is mounted at /opt/traccar/conf/traccar.xml, which is the path the
+  image's own CMD resolves: `-jar tracker-server.jar conf/traccar.xml`, run
+  with WORKDIR /opt/traccar.
+
+  It replaces the image's shipped traccar.xml. That shipped file contains only
+  the four database.* H2 defaults; everything else Traccar knows lives in its
+  compiled-in defaults, so there is no default.xml to point at and no
+  config.default entry is needed here.
+
+  This file holds only defaults that belong in version control.
+  Environment-specific values (hosts, credentials, keys) come from
+  traccar/.env via CONFIG_USE_ENVIRONMENT_VARIABLES=true, which Traccar reads
+  as UPPER_SNAKE_CASE keys and which takes precedence over this file.
+
+  Do NOT put secrets here.
+-->
+<properties>
+  <!--
+    Driver class only. Connection details (url, user, password) come from
+    traccar/.env so credentials stay out of version control. Note the image's
+    shipped default is the embedded H2 driver, so this override is required
+    before Traccar will talk to the traccar-db service.
+  -->
+  <entry key="database.driver">org.postgresql.Driver</entry>
+
+  <!--
+    The Traccar VM is sized for about 1,000 GPS devices (roughly 33 reports/s)
+    and moderate concurrent panel/API use. Raise the upstream default pool of
+    20 to 30; avoid a larger pool on the 2-vCPU / 4-GB VM without measurements.
+  -->
+  <entry key="database.maxPoolSize">30</entry>
+
+  <!--
+    Devices report every 30 seconds in the current capacity estimate. Close
+    stale TCP sessions after 60 seconds (two reporting intervals) so broken
+    links do not consume sockets for the 30-minute upstream default. This is
+    the GPS protocol connection timeout, not a student HTTP request timeout.
+  -->
+  <entry key="server.timeout">60</entry>
+
+  <!--
+    Bind on all interfaces so the published port in compose.yml is reachable
+    from the host. Stated explicitly here to keep the intent visible and
+    locally overridable.
+
+    Key names verified against the 6.16.0 jar: the admin/HTTP server is
+    configured with web.address / web.port. There is no server.address or
+    server.port in this version — those were renamed, and setting them has no
+    effect.
+  -->
+  <entry key="web.address">0.0.0.0</entry>
+
+  <!--
+    Devices are created only by the UniTrack backend (docs/modules/traccar.md,
+    INV-TRC-002). Unknown trackers must not register themselves. false is
+    already Traccar's default; stated explicitly so nobody flips it by accident.
+    Key verified against Keys.java of 6.16.0 (DATABASE_REGISTER_UNKNOWN).
+  -->
+  <entry key="database.registerUnknown">false</entry>
+</properties>

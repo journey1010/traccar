@@ -1,0 +1,14 @@
+[Unit]
+Description=UniTrack Traccar pod
+Wants=network-online.target
+After=network-online.target
+
+[Pod]
+PodName=unitrack-traccar
+PublishPort=8082:8082/tcp
+PublishPort=5055:5055/tcp
+PublishPort=5000-5200:5000-5200/tcp
+PublishPort=5000-5200:5000-5200/udp
+
+[Install]
+WantedBy=multi-user.target

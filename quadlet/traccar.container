@@ -1,0 +1,30 @@
+[Unit]
+Description=UniTrack Traccar server
+Wants=network-online.target
+After=network-online.target
+Requires=traccar-db.service
+After=traccar-db.service
+
+[Container]
+Image=localhost/unitrack-traccar:6.16.0
+ContainerName=unitrack-traccar
+Pod=traccar.pod
+Pull=never
+EnvironmentFile=/etc/unitrack/traccar.env
+Volume=unitrack-traccar-logs:/opt/traccar/logs
+HealthCmd=wget -q --spider http://localhost:8082/api/health
+HealthInterval=60s
+HealthTimeout=5s
+HealthStartPeriod=30s
+HealthRetries=5
+Notify=healthy
+LogDriver=journald
+StopTimeout=30
+Ulimit=nofile=50000:50000
+
+[Service]
+Restart=always
+TimeoutStartSec=15min
+
+[Install]
+WantedBy=multi-user.target
