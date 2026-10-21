@@ -11,4 +11,4 @@ PublishPort=5000-5200:5000-5200/tcp
 PublishPort=5000-5200:5000-5200/udp
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=default.target

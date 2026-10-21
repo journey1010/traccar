@@ -1,4 +1,4 @@
-# Traccar para UniTrack
+# Traccar
 
 Este repositorio contiene las imágenes y unidades de Podman para ejecutar
 [Traccar](https://www.traccar.org/) junto con PostgreSQL/TimescaleDB. Traccar
@@ -83,10 +83,3 @@ El valor `0` desactiva la política correspondiente. La compresión debe ser
 menor que la retención cuando ambas están activas. Las políticas se aplican a
 las tablas de posiciones y eventos después de que Traccar las crea.
 
-## Seguridad
-
-No guardes contraseñas ni otros secretos en el repositorio. Usa los archivos
-de entorno del servidor, con permisos restringidos, y mantén iguales las
-credenciales de Traccar y PostgreSQL. No expongas `5432` públicamente y limita
-los puertos de Traccar en el firewall según los dispositivos y usuarios que
-deban acceder.

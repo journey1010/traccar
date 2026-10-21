@@ -4,11 +4,10 @@ Wants=network-online.target
 After=network-online.target
 
 [Container]
-Image=localhost/unitrack-traccar-db:pg17
+Image=docker.io/journii/traccar:1.0.0-db
 ContainerName=unitrack-traccar-db
 Pod=traccar.pod
-Pull=never
-EnvironmentFile=/etc/unitrack/traccar-db.env
+EnvironmentFile=%h/.config/containers/systemd/traccar-db.env
 Volume=unitrack-traccar-db:/var/lib/postgresql/data
 # No fijar usuario/base aquí: la unidad toma ambos de traccar-db.env.
 HealthCmd=pg_isready
@@ -24,4 +23,4 @@ Restart=always
 TimeoutStartSec=15min
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=default.target

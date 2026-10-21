@@ -6,11 +6,11 @@ Requires=traccar-db.service
 After=traccar-db.service
 
 [Container]
-Image=localhost/unitrack-traccar:6.16.0
+Image=docker.io/journii/traccar:1.0.0-app
 ContainerName=unitrack-traccar
 Pod=traccar.pod
 Pull=never
-EnvironmentFile=/etc/unitrack/traccar.env
+EnvironmentFile=%h/.config/containers/systemd/traccar.env
 Volume=unitrack-traccar-logs:/opt/traccar/logs
 HealthCmd=wget -q --spider http://localhost:8082/api/health
 HealthInterval=60s
@@ -27,4 +27,4 @@ Restart=always
 TimeoutStartSec=15min
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=default.target

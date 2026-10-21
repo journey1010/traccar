@@ -25,29 +25,32 @@ ejecución de las sentencias SQL.
 
 ## Configuración e inicio
 
+El despliegue es rootless: corre con un usuario normal y `systemctl --user`.
 Copia `traccar.env.example` y `traccar-db.env.example` a
-`/etc/unitrack/traccar.env` y `/etc/unitrack/traccar-db.env`. Usa una contraseña
-segura e idéntica en ambos; limita los archivos a lectura del administrador
-(`chmod 0600`). No copies los `.env` locales del repositorio al servidor.
+`~/.config/containers/systemd/traccar.env` y `traccar-db.env`. Usa una
+contraseña segura e idéntica en ambos y limita los archivos con `chmod 0600`.
+No copies los `.env` locales del repositorio al servidor.
 
 Copia `traccar.pod`, `traccar.container` y `traccar-db.container` a
-`/etc/containers/systemd/`, y luego arranca el pod:
+`~/.config/containers/systemd/`, y luego arranca el pod. `enable-linger` hace
+que arranque al iniciar el servidor sin sesión abierta:
 
 ```sh
-sudo systemctl daemon-reload
-sudo systemctl start traccar-pod.service traccar-db.service traccar.service
+sudo loginctl enable-linger "$USER"
+systemctl --user daemon-reload
+systemctl --user start traccar-pod.service traccar-db.service traccar.service
 ```
+
+Las imágenes deben existir en el almacén de ese usuario (`podman build` sin
+`sudo`). `Ulimit=nofile=50000` falla si el límite duro del usuario es menor;
+súbelo en `/etc/security/limits.d/` si hace falta.
 
 Las unidades esperan que los contenedores reporten estado saludable antes de
 marcarse listos. `traccar.service` además espera a `traccar-db.service`.
 
 La configuración inicial contempla ≈1,000 dispositivos reportando cada 30 s,
 con uso moderado del panel: Traccar tiene pool DB de 30 y timeout de conexión
-GPS de 60 s; el contenedor fija `nofile` en 50,000. En UniTrack, el pool inicial
-del API es 20 conexiones y el worker conserva 30. Las llamadas REST de UniTrack
-a Traccar y la apertura de conexiones DB esperan hasta 20 s. Estos son valores
-iniciales para esa carga; revisa métricas antes de escalar réplicas o aumentar
-los pools.
+GPS de 60 s; el contenedor fija `nofile` en 50,000.
 
 Los valores `DATABASE_MAX_POOL_SIZE`, `SERVER_TIMEOUT` y
 `DATABASE_REGISTER_UNKNOWN` del ejemplo Quadlet corresponden a los defaults
